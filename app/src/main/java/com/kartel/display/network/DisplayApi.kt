@@ -51,4 +51,13 @@ class DisplayApi(private val client: io.github.jan.supabase.SupabaseClient = Sup
                 put("p_payload", payload)
             },
         ).decodeAs()
+
+    suspend fun checkUpdate(deviceToken: String, currentVersionCode: Int): CheckUpdateResponse =
+        client.postgrest.rpc(
+            "display_check_update",
+            buildJsonObject {
+                put("p_device_token", deviceToken)
+                put("p_current_version_code", currentVersionCode)
+            },
+        ).decodeAs()
 }

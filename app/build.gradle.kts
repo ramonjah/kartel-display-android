@@ -37,6 +37,9 @@ android {
 
     buildFeatures {
         compose = true
+        // BuildConfig.VERSION_CODE — updater/UpdateChecker.kt сравнивает
+        // текущую версию с display_check_update, не хардкодит число.
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -57,6 +60,8 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.1")
+    // FileProvider — content:// URI для скачанного APK (updater/, Этап 10).
+    implementation("androidx.core:core-ktx:1.13.1")
 
     // Сеть: те же RPC, что уже проверены живьём против production Supabase
     // (display_request_pairing/claim/get_screen_config/heartbeat/log_event).

@@ -91,3 +91,17 @@ data class ScreenUpdatedEvent(
     val screen_id: String,
     val layout_version: Int? = null,
 )
+
+// Этап 10 (§15 DISPLAY_ARCHITECTURE.md) — self-hosted OTA. available=false
+// значит "уже последняя версия", не ошибка; url ведёт на GitHub Releases
+// asset, не на сам KARTEL Supabase (APK-файл не хранится в БД).
+@Serializable
+data class CheckUpdateResponse(
+    val ok: Boolean,
+    val reason: String? = null,
+    val available: Boolean = false,
+    val version: String? = null,
+    val version_code: Int? = null,
+    val url: String? = null,
+    val mandatory: Boolean = false,
+)

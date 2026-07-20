@@ -2,7 +2,8 @@
 // DISPLAY_ARCHITECTURE.md §12/§13) — Layout получается cache-first, затем
 // обновляется через ScreenSyncManager (sync/) по diff'у layout_version, не
 // перезапросом раз в N секунд. Heartbeat остаётся отдельным REST-циклом раз
-// в 30с (§8: "устройству не нужно получать события о себе").
+// в 30с (§8: "устройству не нужно получать события о себе"). UpdateChecker
+// (updater/, Этап 10) — раз в 6 часов, тоже не time-critical.
 
 package com.kartel.display
 
@@ -30,6 +31,7 @@ import com.kartel.display.renderer.ScreenRenderer
 import com.kartel.display.storage.ConfigCache
 import com.kartel.display.storage.TokenStore
 import com.kartel.display.sync.ScreenSyncManager
+import com.kartel.display.updater.UpdateChecker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -39,6 +41,7 @@ class MainActivity : ComponentActivity() {
         val tokenStore = TokenStore(applicationContext)
         val configCache = ConfigCache(applicationContext)
         val api = DisplayApi()
+        val updateChecker = UpdateChecker(api, applicationContext)
 
         setContent {
             var token by remember { mutableStateOf(tokenStore.deviceToken) }
@@ -55,7 +58,7 @@ class MainActivity : ComponentActivity() {
                             token = newToken
                         })
                     } else {
-                        DisplayContent(api = api, token = token!!, configCache = configCache)
+                        DisplayContent(api = api, token = token!!, configCache = configCache, updateChecker = updateChecker)
                     }
                 }
             }
@@ -64,7 +67,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCache) {
+private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCache, updateChecker: UpdateChecker) {
     val scope = rememberCoroutineScope()
     val syncManager = remember(token) { ScreenSyncManager(api = api, cache = configCache) }
     val config by syncManager.config.collectAsState()
@@ -80,9 +83,14 @@ private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCa
     // живьём в Этапе 4: last_heartbeat_at, порог 2 минуты).
     LaunchedEffect(token) {
         while (true) {
-            launch { runCatching { api.deviceHeartbeat(token, appVersion = BuildConfigVersion) } }
+            launch { runCatching { api.deviceHeartbeat(token, appVersion = BuildConfig.VERSION_NAME) } }
             delay(30_000)
         }
+    }
+
+    // APK-обновления (Этап 10) — раз в 6 часов, см. UpdateChecker.
+    LaunchedEffect(token) {
+        updateChecker.start(scope = scope, deviceToken = token)
     }
 
     when {
@@ -92,5 +100,3 @@ private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCa
         else -> ScreenRenderer(layout = config?.layout, playlist = config?.playlist)
     }
 }
-
-private const val BuildConfigVersion = "0.1.0-mvp"
