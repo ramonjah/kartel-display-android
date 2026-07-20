@@ -3,11 +3,26 @@
 // одного Layout, полученного один раз через display_get_screen_config —
 // без Realtime-подписки ещё (Этап 6, sync-модуль).
 
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+// Release-подпись (Этап 11, первая реальная установка «в бою») — путь и
+// пароли живут ТОЛЬКО в local.properties (gitignored), не в этом файле:
+// репозиторий публичный (Этап 10), keystore/пароли в git было бы утечкой
+// permanent signing identity приложения. debug-сборка (весь предыдущий
+// цикл разработки в этой сессии) продолжает работать без local.properties
+// — signingConfig на release подключается, только если секреты найдены.
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val releaseKeystorePath = localProperties.getProperty("KARTEL_RELEASE_STORE_FILE")
+val hasReleaseSigning = releaseKeystorePath != null && rootProject.file(releaseKeystorePath).exists()
 
 android {
     namespace = "com.kartel.display"
@@ -18,12 +33,31 @@ android {
         minSdk = 28 // Android TV boxes в реальном парке редко ниже Android 9
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0-mvp"
+        versionName = "1.0.0"
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(releaseKeystorePath!!)
+                storePassword = localProperties.getProperty("KARTEL_RELEASE_STORE_PASSWORD")
+                keyAlias = localProperties.getProperty("KARTEL_RELEASE_KEY_ALIAS")
+                keyPassword = localProperties.getProperty("KARTEL_RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            // Без hasReleaseSigning release-сборка остаётся debug-подписанной
+            // (AGP-дефолт) — годится для продолжения разработки в этой
+            // песочнице, но НЕ для реальной установки в точке (§16 security:
+            // debug-ключ публичен по своей природе, публикуется во всех
+            // форках Android SDK).
         }
     }
 
