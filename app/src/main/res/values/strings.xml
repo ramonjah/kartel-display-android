@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KARTEL Display</string>
+    <string name="pairing_title">KARTEL Display</string>
+    <string name="pairing_subtitle">Введите этот код в KARTEL BUSINESS → Экраны → Добавить телевизор</string>
+    <string name="pairing_waiting">Ожидаю подтверждения…</string>
+    <string name="pairing_expired">Код истёк — получаю новый…</string>
+</resources>

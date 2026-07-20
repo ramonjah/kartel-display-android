@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Leanback launcher banner (320x180dp requirement). Placeholder —
+     сознательно простой: чёрный фон + акцентная полоса, без внешних
+     ассетов (нет ещё финального лого клиента). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:pathData="M0,0h320v180h-320z" android:fillColor="#0A0A0A" />
+    <path android:pathData="M0,84h320v12h-320z" android:fillColor="#F97316" />
+</vector>
