@@ -67,12 +67,21 @@ dependencies {
     // сервер шлёт realtime.send() на topic screen:<id> (миграция 058).
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-okhttp:2.3.11")
+    // Погода — та же схема, что и WeatherAnalyticsService.js (rstore-dashboard):
+    // Open-Meteo напрямую, без ключа, без нового KARTEL RPC (§10 MVP Templates).
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // Изображения (image-виджет) и локальный кэш ассетов (§13 offline).
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Видео (video-виджет, promo_banner-плейлист) — Media3, официальный
+    // преемник ExoPlayer (§10 MVP Templates).
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
 
     // QR-виджет — та же независимая от Android библиотека, что и везде в вебе.
     implementation("com.google.zxing:core:3.5.3")

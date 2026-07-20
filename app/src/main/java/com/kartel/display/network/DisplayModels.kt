@@ -44,11 +44,19 @@ data class Layout(
     val zones: List<Zone> = emptyList(),
 )
 
+// Разрешено на сервере (миграция 059, display_get_screen_config) против
+// content_items — приходят готовые kind/url/live_widget/name, не голая
+// content_item_id-ссылка, которую клиенту было бы не с чем сопоставить
+// (RLS запрещает устройству читать content_items напрямую).
 @Serializable
 data class PlaylistItem(
     val content_item_id: String,
     val duration_sec: Int = 10,
     val order: Int = 0,
+    val kind: String? = null, // 'media' | 'url' | 'live'
+    val url: String? = null,
+    val live_widget: String? = null,
+    val name: String? = null,
 )
 
 @Serializable

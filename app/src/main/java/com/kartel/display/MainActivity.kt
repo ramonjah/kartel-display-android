@@ -89,7 +89,7 @@ private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCa
         config == null && errorMessage == null -> Text(text = "Загрузка…", color = Color.Gray)
         config == null && errorMessage != null -> Text(text = "Ошибка: $errorMessage", color = Color.Red)
         config?.layout == null -> Text(text = "Экран без layout — ждём назначения от владельца", color = Color.Gray)
-        else -> ScreenRenderer(layout = config?.layout)
+        else -> ScreenRenderer(layout = config?.layout, playlist = config?.playlist)
     }
 }
 
