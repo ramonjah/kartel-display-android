@@ -62,6 +62,10 @@ dependencies {
     // (display_request_pairing/claim/get_screen_config/heartbeat/log_event).
     implementation(platform("io.github.jan-tennert.supabase:bom:2.5.4"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    // Broadcast, не postgres_changes — RLS на screens/layouts/playlists
+    // блокирует anon SELECT (device token — единственная граница доверия),
+    // сервер шлёт realtime.send() на topic screen:<id> (миграция 058).
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-okhttp:2.3.11")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

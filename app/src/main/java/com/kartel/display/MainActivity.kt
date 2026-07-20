@@ -1,7 +1,8 @@
-// Renderer MVP (Этап 5, DISPLAY_ARCHITECTURE.md §20 roadmap): нет
-// Realtime-подписки ещё (Этап 6) — Layout получается один раз при
-// старте. Heartbeat отправляется раз в 30с (§8: "обычный REST-вызов, не
-// Realtime — устройству не нужно получать события о себе").
+// Renderer MVP (Этап 5) + Realtime-подписка/offline-кэш (Этап 6,
+// DISPLAY_ARCHITECTURE.md §12/§13) — Layout получается cache-first, затем
+// обновляется через ScreenSyncManager (sync/) по diff'у layout_version, не
+// перезапросом раз в N секунд. Heartbeat остаётся отдельным REST-циклом раз
+// в 30с (§8: "устройству не нужно получать события о себе").
 
 package com.kartel.display
 
@@ -15,17 +16,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.kartel.display.network.DisplayApi
-import com.kartel.display.network.ScreenConfigResponse
 import com.kartel.display.registration.PairingScreen
 import com.kartel.display.renderer.ScreenRenderer
+import com.kartel.display.storage.ConfigCache
 import com.kartel.display.storage.TokenStore
+import com.kartel.display.sync.ScreenSyncManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -33,6 +37,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val tokenStore = TokenStore(applicationContext)
+        val configCache = ConfigCache(applicationContext)
         val api = DisplayApi()
 
         setContent {
@@ -50,7 +55,7 @@ class MainActivity : ComponentActivity() {
                             token = newToken
                         })
                     } else {
-                        DisplayContent(api = api, token = token!!)
+                        DisplayContent(api = api, token = token!!, configCache = configCache)
                     }
                 }
             }
@@ -59,16 +64,16 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun DisplayContent(api: DisplayApi, token: String) {
-    var config by remember { mutableStateOf<ScreenConfigResponse?>(null) }
-    var loading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCache) {
+    val scope = rememberCoroutineScope()
+    val syncManager = remember(token) { ScreenSyncManager(api = api, cache = configCache) }
+    val config by syncManager.config.collectAsState()
+    val errorMessage by syncManager.errorMessage.collectAsState()
 
-    // Один REST-вызов при старте — не Realtime, это Этап 6 (§8/§12).
+    // Cache-first + fetch + Realtime broadcast-подписка (Этап 6) — вся
+    // orchestration в ScreenSyncManager, здесь только запуск/сбор состояния.
     LaunchedEffect(token) {
-        val res = api.getScreenConfig(token)
-        if (res.ok) config = res else errorMessage = res.reason
-        loading = false
+        syncManager.start(scope = scope, deviceToken = token)
     }
 
     // Heartbeat — статус online/offline на стороне owner UI (уже проверено
@@ -81,8 +86,8 @@ private fun DisplayContent(api: DisplayApi, token: String) {
     }
 
     when {
-        loading -> Text(text = "Загрузка…", color = Color.Gray)
-        errorMessage != null -> Text(text = "Ошибка: $errorMessage", color = Color.Red)
+        config == null && errorMessage == null -> Text(text = "Загрузка…", color = Color.Gray)
+        config == null && errorMessage != null -> Text(text = "Ошибка: $errorMessage", color = Color.Red)
         config?.layout == null -> Text(text = "Экран без layout — ждём назначения от владельца", color = Color.Gray)
         else -> ScreenRenderer(layout = config?.layout)
     }

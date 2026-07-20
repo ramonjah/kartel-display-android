@@ -72,3 +72,14 @@ data class SimpleOkResponse(
     val ok: Boolean,
     val reason: String? = null,
 )
+
+// Payload миграции 058 (realtime.send на topic screen:<screen_id>) — сам
+// сигнал "что-то поменялось", не данные; layout_version — best-effort diff
+// hint (приходит только из notify_screen_via_layout, у остальных двух
+// триггеров его нет), финальное решение "обновляться или нет" всё равно за
+// сверкой с уже полученным ScreenConfigResponse.layout_version.
+@Serializable
+data class ScreenUpdatedEvent(
+    val screen_id: String,
+    val layout_version: Int? = null,
+)

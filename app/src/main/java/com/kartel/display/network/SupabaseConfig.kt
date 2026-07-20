@@ -2,6 +2,7 @@ package com.kartel.display.network
 
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 
 // Тот же production-проект и тот же публичный anon-ключ, что уже встроен в
 // веб-бандл rstore-dashboard (CLAUDE.md → Supabase MCP OOM Fallback) — anon
@@ -19,6 +20,7 @@ object SupabaseConfig {
             supabaseKey = SUPABASE_ANON_KEY,
         ) {
             install(Postgrest)
+            install(Realtime)
         }
     }
 }
