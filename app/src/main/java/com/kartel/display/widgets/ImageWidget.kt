@@ -2,6 +2,7 @@ package com.kartel.display.widgets
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
@@ -26,6 +27,7 @@ fun ImageWidget(config: JsonElement?, zoneItems: List<ZoneContentItem> = emptyLi
     val playlistItem = if (directUrl == null && zoneItems.isEmpty())
         rememberPlaylistItem(playlist) { it.url != null && !it.looksLikeVideo() } else null
     val url = directUrl ?: zoneItem?.url ?: playlistItem?.url
+    val alignment = zoneItem?.focusAlignment() ?: Alignment.Center
 
     if (url != null) {
         AsyncImage(
@@ -33,6 +35,7 @@ fun ImageWidget(config: JsonElement?, zoneItems: List<ZoneContentItem> = emptyLi
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
+            alignment = alignment,
         )
     } else {
         UnknownWidget("image (нет url в config и нет изображений в playlist)")

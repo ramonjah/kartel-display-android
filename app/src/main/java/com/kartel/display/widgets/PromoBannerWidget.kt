@@ -35,26 +35,26 @@ fun PromoBannerWidget(zoneItems: List<ZoneContentItem> = emptyList(), playlist: 
     if (zoneItems.isNotEmpty()) {
         val item = rememberZoneItem(zoneItems.filter { it.url != null })
         if (item?.url == null) { UnknownWidget("promo_banner (нет назначенного контента)"); return }
-        PromoContent(url = item.url, isVideo = item.looksLikeVideo(), slogan = item.slogan, description = item.description)
+        PromoContent(url = item.url, isVideo = item.looksLikeVideo(), slogan = item.slogan, description = item.description, alignment = item.focusAlignment())
         return
     }
     val item = rememberPlaylistItem(playlist) { it.url != null }
     if (item?.url == null) { UnknownWidget("promo_banner (пустой playlist)"); return }
-    PromoContent(url = item.url, isVideo = item.looksLikeVideo(), slogan = null, description = null)
+    PromoContent(url = item.url, isVideo = item.looksLikeVideo(), slogan = null, description = null, alignment = Alignment.Center)
 }
 
 @Composable
-private fun PromoContent(url: String, isVideo: Boolean, slogan: String?, description: String?) {
+private fun PromoContent(url: String, isVideo: Boolean, slogan: String?, description: String?, alignment: Alignment) {
     if (slogan == null && description == null) {
         // Голая картинка/видео без структурированного текста — как раньше.
         if (isVideo) VideoPlayer(url = url, loop = false)
-        else AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = alignment)
         return
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isVideo) VideoPlayer(url = url, loop = false)
-        else AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = alignment)
 
         // Тот же градиент, что PromoCardPreview в Displays.jsx: прозрачно сверху
         // → чёрный снизу, чтобы текст был читаем поверх любого фото.

@@ -42,6 +42,11 @@ data class ZoneContentItem(
     val name: String? = null,
     val slogan: String? = null,
     val description: String? = null,
+    // Точка фокуса кадрирования (0..1, центр по умолчанию, миграция 064) —
+    // владелец задаёт её drag'ом по превью в PromotionsPanel (rstore-
+    // dashboard); здесь конвертируется в Coil BiasAlignment (-1..1).
+    val focus_x: Double = 0.5,
+    val focus_y: Double = 0.5,
 )
 
 @Serializable
