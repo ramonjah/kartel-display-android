@@ -32,8 +32,8 @@ android {
         applicationId = "com.kartel.display"
         minSdk = 28 // Android TV boxes в реальном парке редко ниже Android 9
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
     }
 
     signingConfigs {
