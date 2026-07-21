@@ -5,9 +5,14 @@ name: Build APK
 # отсюда его скачивает кнопка «Скачать APK» на экране «Экраны» (rstore-dashboard),
 # и отсюда же берёт обновления self-hosted OTA (display_check_update, Этап 10).
 #
-# Подпись: debug-ключ (детерминированный androiddebugkey) — APK устанавливается
-# сайдлоадом и обновляется по OTA между debug-сборками. Для продакшн-парка позже
-# стоит добавить release-keystore через GitHub Secrets (см. app/build.gradle.kts).
+# Подпись: RELEASE-ключ из секретов репозитория (KARTEL_RELEASE_*), не debug.
+# Раньше собирали assembleDebug — каждый прогон на свежем эфемерном раннере
+# генерировал СЛУЧАЙНЫЙ debug-ключ (AGP создаёт его сам при отсутствии), и
+# Android отказывался ставить обновление поверх APK с другой подписью —
+# владелец получал ошибку установки при каждом апдейте. Секреты пишут
+# local.properties прямо перед сборкой — тот же путь, что уже поддерживает
+# app/build.gradle.kts (hasReleaseSigning), просто теперь заполнен и в CI,
+# не только при локальной сборке разработчиком.
 
 on:
   workflow_dispatch:
@@ -38,8 +43,28 @@ jobs:
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
 
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Write release signing config
+        env:
+          STORE_B64: ${{ secrets.KARTEL_RELEASE_STORE_FILE_B64 }}
+          STORE_PASS: ${{ secrets.KARTEL_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KARTEL_RELEASE_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KARTEL_RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "$STORE_B64" | base64 -d > release.keystore
+          cat > local.properties <<EOF
+          KARTEL_RELEASE_STORE_FILE=release.keystore
+          KARTEL_RELEASE_STORE_PASSWORD=$STORE_PASS
+          KARTEL_RELEASE_KEY_ALIAS=$KEY_ALIAS
+          KARTEL_RELEASE_KEY_PASSWORD=$KEY_PASS
+          EOF
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Verify signature
+        run: |
+          BT=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
 
       - name: Stage APK
         id: stage
@@ -47,7 +72,7 @@ jobs:
           mkdir -p out
           VN=$(grep -oE 'versionName = "[^"]+"' app/build.gradle.kts | head -1 | cut -d'"' -f2)
           VC=$(grep -oE 'versionCode = [0-9]+' app/build.gradle.kts | head -1 | grep -oE '[0-9]+')
-          cp app/build/outputs/apk/debug/app-debug.apk "out/kartel-display-v${VN}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "out/kartel-display-v${VN}.apk"
           echo "version_name=$VN" >> "$GITHUB_OUTPUT"
           echo "version_code=$VC" >> "$GITHUB_OUTPUT"
           echo "apk=out/kartel-display-v${VN}.apk" >> "$GITHUB_OUTPUT"
@@ -66,7 +91,8 @@ jobs:
           name: KARTEL Display v${{ steps.stage.outputs.version_name }}
           files: ${{ steps.stage.outputs.apk }}
           body: |
-            KARTEL Display — клиент для Android TV (debug-signed, для установки сайдлоадом).
+            KARTEL Display — клиент для Android TV (release-signed, постоянный ключ —
+            обновления поверх этой и всех последующих сборок ставятся без переустановки).
 
             Версия: ${{ steps.stage.outputs.version_name }} (code ${{ steps.stage.outputs.version_code }})
 
