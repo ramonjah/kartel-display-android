@@ -12,20 +12,21 @@ import com.kartel.display.network.Zone
 // product_grid отложен (нужна projection-таблица products/stock, ещё не
 // построена), top_products/daily_brief — Этап 8 (Live-виджеты) по roadmap.
 val MVP_IMPLEMENTED_WIDGETS = setOf(
-    "clock", "image", "qr", "weather", "promo_banner", "video", "html", "youtube",
+    "clock", "image", "qr", "weather", "promo_banner", "video", "html", "youtube", "marquee",
 )
 
 @Composable
 fun RenderWidget(zone: Zone, playlist: Playlist?) {
     when (zone.widget) {
         "clock" -> ClockWidget(zone.config)
-        "image" -> ImageWidget(zone.config, playlist)
+        "image" -> ImageWidget(zone.config, zone.items, playlist)
         "qr" -> QrWidget(zone.config)
         "weather" -> WeatherWidget(zone.config)
-        "promo_banner" -> PromoBannerWidget(playlist)
+        "promo_banner" -> PromoBannerWidget(zone.items, playlist)
         "video" -> VideoWidget(zone.config, playlist)
         "html" -> HtmlWidget(zone.config)
         "youtube" -> YoutubeWidget(zone.config)
+        "marquee" -> MarqueeWidget(zone.config)
         else -> UnknownWidget(zone.widget)
     }
 }
