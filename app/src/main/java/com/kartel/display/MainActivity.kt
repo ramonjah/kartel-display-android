@@ -8,9 +8,12 @@
 package com.kartel.display
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,8 +26,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.kartel.display.network.DisplayApi
 import com.kartel.display.registration.PairingScreen
 import com.kartel.display.renderer.ScreenRenderer
@@ -38,6 +44,15 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Digital signage: экран не должен гаснуть и уходить в системный
+        // скринсейвер (Daydream) от бездействия — на витрине никто не
+        // трогает пульт часами. FLAG_KEEP_SCREEN_ON держит устройство
+        // "активным" с точки зрения PowerManager, чего для kiosk-приложения
+        // достаточно (без него — тёмный/спящий экран через несколько минут
+        // простоя, обнаружено живьём при установке в точке).
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         val tokenStore = TokenStore(applicationContext)
         val configCache = ConfigCache(applicationContext)
         val api = DisplayApi()
@@ -99,9 +114,24 @@ private fun DisplayContent(api: DisplayApi, token: String, configCache: ConfigCa
     }
 
     when {
-        config == null && errorMessage == null -> Text(text = "Загрузка…", color = Color.Gray)
-        config == null && errorMessage != null -> Text(text = "Ошибка: $errorMessage", color = Color.Red)
-        config?.layout == null -> Text(text = "Экран без layout — ждём назначения от владельца", color = Color.Gray)
+        config == null && errorMessage == null -> StatusMessage("Загрузка…", Color.Gray)
+        config == null && errorMessage != null -> StatusMessage("Ошибка: $errorMessage", Color.Red)
+        config?.layout == null -> StatusMessage("Экран без layout — ждём назначения от владельца", Color.Gray)
         else -> ScreenRenderer(layout = config?.layout, playlist = config?.playlist)
+    }
+}
+
+// TV-safe area: голый Text без Box/padding садится в (0,0) — левый верхний
+// угол — который на реальных телевизорах часто попадает под overscan-обрезку
+// (найдено живьём: текст «вылезал» за рамку экрана). 48.dp — тот же отступ,
+// что уже используется в PairingScreen; центровка — чтобы сообщение было
+// заведомо внутри безопасной зоны на любой диагонали/масштабировании.
+@Composable
+private fun StatusMessage(text: String, color: Color) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = text, color = color, textAlign = TextAlign.Center)
     }
 }
