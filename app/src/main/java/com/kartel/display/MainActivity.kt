@@ -51,7 +51,12 @@ class MainActivity : ComponentActivity() {
             // — текст невидим, хотя рендер технически "работает" (найдено
             // живой проверкой на эмуляторе: экран был чёрным без ошибок).
             MaterialTheme(colorScheme = darkColorScheme()) {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+                // contentColor = White ОБЯЗАТЕЛЕН: Surface(color = Color.Black) — не
+                // тема-цвет, поэтому material3 наследует LocalContentColor по умолчанию
+                // (чёрный) → весь Text без явного цвета (заголовок и 6-значный код на
+                // PairingScreen, и любое сообщение об ошибке) рисуется чёрным по чёрному
+                // и невидим. Симптом — «тёмный экран» при живой установке на ТВ.
+                Surface(modifier = Modifier.fillMaxSize(), color = Color.Black, contentColor = Color.White) {
                     if (token == null) {
                         PairingScreen(onPaired = { newToken ->
                             tokenStore.deviceToken = newToken

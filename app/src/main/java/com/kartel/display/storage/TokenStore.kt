@@ -5,11 +5,18 @@
 package com.kartel.display.storage
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 class TokenStore(context: Context) {
-    private val prefs = run {
+    // EncryptedSharedPreferences (security-crypto alpha) кидает исключение на
+    // части дешёвых Android TV боксов со сломанным Keystore/StrongBox — это роняет
+    // onCreate ещё до setContent и даёт чёрный экран. Фолбэк на обычные
+    // SharedPreferences: устройство остаётся рабочим; device-токен и так узкоскоупный
+    // и отзываемый сервером (ADR-011 §5.1), это приемлемая деградация против
+    // неработающего устройства. Целевое хранилище — по-прежнему шифрованное.
+    private val prefs: SharedPreferences = try {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
@@ -20,6 +27,8 @@ class TokenStore(context: Context) {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
+    } catch (e: Exception) {
+        context.getSharedPreferences("kartel_display_prefs", Context.MODE_PRIVATE)
     }
 
     var deviceToken: String?
