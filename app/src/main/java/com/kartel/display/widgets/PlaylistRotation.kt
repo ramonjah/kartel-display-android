@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.kartel.display.network.Playlist
 import com.kartel.display.network.PlaylistItem
+import com.kartel.display.network.ZoneContentItem
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,7 +34,29 @@ fun rememberPlaylistItem(playlist: Playlist?, filter: (PlaylistItem) -> Boolean)
     return items.getOrNull(index % items.size.coerceAtLeast(1))
 }
 
+// То же самое, но над контентом, назначенным конкретной зоне (zone.items,
+// миграция 063) — владелец сам выбрал состав и порядок в редакторе, поэтому
+// без фильтра: список уже ровно то, что должно ротироваться в этой зоне.
+@Composable
+fun rememberZoneItem(items: List<ZoneContentItem>): ZoneContentItem? {
+    var index by remember(items) { mutableIntStateOf(0) }
+
+    LaunchedEffect(items) {
+        if (items.size <= 1) return@LaunchedEffect
+        while (true) {
+            val current = items[index % items.size]
+            delay(current.duration_sec.coerceAtLeast(1) * 1000L)
+            index++
+        }
+    }
+
+    return items.getOrNull(index % items.size.coerceAtLeast(1))
+}
+
 private val VIDEO_EXTENSIONS = setOf(".mp4", ".webm", ".mov", ".mkv")
 
 fun PlaylistItem.looksLikeVideo(): Boolean =
+    url?.let { u -> VIDEO_EXTENSIONS.any { u.substringBefore('?').endsWith(it, ignoreCase = true) } } ?: false
+
+fun ZoneContentItem.looksLikeVideo(): Boolean =
     url?.let { u -> VIDEO_EXTENSIONS.any { u.substringBefore('?').endsWith(it, ignoreCase = true) } } ?: false

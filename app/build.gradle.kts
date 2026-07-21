@@ -32,8 +32,8 @@ android {
         applicationId = "com.kartel.display"
         minSdk = 28 // Android TV boxes в реальном парке редко ниже Android 9
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.1.0"
     }
 
     signingConfigs {
@@ -96,6 +96,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.1")
     // FileProvider — content:// URI для скачанного APK (updater/, Этап 10).
     implementation("androidx.core:core-ktx:1.13.1")
+    // Splash screen (владелец: приложение стартовало с чёрного экрана без
+    // логотипа) — официальная compat-библиотека, а не самодельный Compose
+    // экран поверх MainActivity: рисует иконку до onCreate/setContent, пока
+    // Compose ещё не готов, и работает единообразно на API 28+ (minSdk).
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Сеть: те же RPC, что уже проверены живьём против production Supabase
     // (display_request_pairing/claim/get_screen_config/heartbeat/log_event).

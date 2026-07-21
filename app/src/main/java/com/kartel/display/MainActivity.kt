@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -43,6 +44,11 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // installSplashScreen() ОБЯЗАН вызываться до super.onCreate() —
+        // держит логотип (Theme.KartelDisplay.Starting, themes.xml) на
+        // экране, пока идёт первая проверка токена/пейринга, вместо голого
+        // чёрного экрана (владелец: «начинает с чёрного экрана просто»).
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         // Digital signage: экран не должен гаснуть и уходить в системный

@@ -27,6 +27,23 @@ data class ClaimPairingResponse(
     val token: String? = null,
 )
 
+// Контент, явно назначенный ЭТОЙ зоне владельцем в редакторе (rstore-dashboard
+// VisualLayoutEditor/ZoneInspector, миграция 063) — не общий screen-level
+// playlist. Сервер (display_get_screen_config) резолвит zone.config.items[].
+// content_item_id → эту структуру, org-scoped; устройство content_items
+// напрямую не читает (RLS), тот же принцип, что и PlaylistItem ниже.
+@Serializable
+data class ZoneContentItem(
+    val content_item_id: String,
+    val duration_sec: Int = 10,
+    val kind: String? = null, // 'media' | 'url' | 'live' | 'promo'
+    val url: String? = null,
+    val live_widget: String? = null,
+    val name: String? = null,
+    val slogan: String? = null,
+    val description: String? = null,
+)
+
 @Serializable
 data class Zone(
     val id: String,
@@ -36,6 +53,11 @@ data class Zone(
     val h: Double,
     val widget: String,
     val config: JsonElement? = null,
+    // Пусто, если владелец не назначил зоне конкретный контент — тогда
+    // виджет-рендерер (ImageWidget/PromoBannerWidget) падает обратно на
+    // ambient screen-level playlist (обратная совместимость, ничего не
+    // ломает для уже настроенных экранов).
+    val items: List<ZoneContentItem> = emptyList(),
 )
 
 @Serializable
