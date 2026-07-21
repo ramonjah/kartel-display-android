@@ -7,6 +7,8 @@
 package com.kartel.display.widgets
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,3 +62,9 @@ fun PlaylistItem.looksLikeVideo(): Boolean =
 
 fun ZoneContentItem.looksLikeVideo(): Boolean =
     url?.let { u -> VIDEO_EXTENSIONS.any { u.substringBefore('?').endsWith(it, ignoreCase = true) } } ?: false
+
+// (0..1, центр 0.5) → Coil/Compose Alignment (-1..1, центр 0) — та же точка
+// фокуса, что владелец выставил drag'ом в веб-предпросмотре (PromotionsPanel,
+// CSS object-position), здесь управляет обрезкой при ContentScale.Crop.
+fun ZoneContentItem.focusAlignment(): Alignment =
+    BiasAlignment((focus_x * 2 - 1).toFloat(), (focus_y * 2 - 1).toFloat())
