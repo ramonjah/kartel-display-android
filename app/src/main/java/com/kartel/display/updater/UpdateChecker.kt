@@ -24,7 +24,15 @@ class UpdateChecker(private val api: DisplayApi, private val context: Context) {
     fun start(scope: CoroutineScope, deviceToken: String) {
         scope.launch {
             while (true) {
-                runCatching { checkOnce(deviceToken) }
+                // checkOnce возвращает true, если обновление было найдено и
+                // предложено (независимо от того, нажал ли владелец
+                // "установить" — promptInstall не умеет отследить результат,
+                // §updater/ApkInstaller.kt). Живой случай: владелец случайно
+                // закрыл диалог установки — следующая попытка не должна
+                // ждать полный 6-часовой цикл, иначе обновление зависает на
+                // старой версии на полдня. "Уже последняя версия" — обычный
+                // случай, там долгий интервал оправдан (не дёргать сервер).
+                val wasOffered = runCatching { checkOnce(deviceToken) }
                     .onFailure { e ->
                         // Раньше здесь была немая runCatching-обёртка — реальная
                         // ошибка (например, скачивание оборвалось) не оставляла
@@ -39,16 +47,17 @@ class UpdateChecker(private val api: DisplayApi, private val context: Context) {
                             })
                         }
                     }
-                delay(CHECK_INTERVAL_MS)
+                    .getOrDefault(false)
+                delay(if (wasOffered) RETRY_INTERVAL_MS else CHECK_INTERVAL_MS)
             }
         }
     }
 
-    suspend fun checkOnce(deviceToken: String) {
+    suspend fun checkOnce(deviceToken: String): Boolean {
         val res = api.checkUpdate(deviceToken, BuildConfig.VERSION_CODE)
-        if (!res.ok || !res.available) return
-        val url = res.url ?: return
-        val versionCode = res.version_code ?: return
+        if (!res.ok || !res.available) return false
+        val url = res.url ?: return false
+        val versionCode = res.version_code ?: return false
 
         api.logDeviceEvent(deviceToken, "apk_update", buildJsonObject {
             put("stage", "downloading"); put("version", res.version)
@@ -58,9 +67,11 @@ class UpdateChecker(private val api: DisplayApi, private val context: Context) {
             put("stage", "install_prompt"); put("version", res.version)
         })
         ApkInstaller.promptInstall(context, apkFile)
+        return true
     }
 
     companion object {
         private const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
+        private const val RETRY_INTERVAL_MS = 5 * 60 * 1000L
     }
 }
